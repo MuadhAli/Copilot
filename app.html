@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Dolphin DEMS Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 18px;
+            margin: 0;
+        }
+
+        #banner {
+    background-color: #3097AC;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.left-section {
+    margin-right: 20px;
+}
+
+.title-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+#banner h1 {
+    color: #ffffff;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 0;
+}
+
+#refresh-button {
+    position: absolute;
+    right: 20px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 8px;
+    transition: transform 0.3s ease;
+}
+
+        #refresh-button:hover {
+            transform: rotate(180deg);
+        }
+
+        #refresh-button i {
+            display: block;
+        }
+
+        #webchat-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 900px;
+            height: 80vh;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #welcome-screen {
+            padding: 20px;
+            background-color: #f8f9fa;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        #welcome-message {
+            margin-bottom: 20px;
+            color: #495057;
+        }
+
+        #example-questions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .question-button {
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .question-button:hover {
+            background-color: #333;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        #webchat {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #666;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 14px;
+            }
+
+            #webchat-container {
+                width: 100%;
+                height: 90vh;
+            }
+
+            #refresh-button {
+                font-size: 16px;
+            }
+
+            .question-button {
+                font-size: 12px;
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="webchat-container">
+        <div id="banner">
+            <div class="left-section">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Microsoft_365_Copilot_Icon.svg/768px-Microsoft_365_Copilot_Icon.svg.png" width="35px" alt="Left Logo">
+            </div>
+            <div class="title-section">
+                <h1>Dolphin DEMS Assistant</h1>
+                <img src="./DE_Logo_-removebg-preview.png" width="100px" style="margin-top: 0;" alt="Title Logo">
+            </div>
+            <button id="refresh-button" onclick="refreshPage()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+        <div id="welcome-screen">
+            <div id="welcome-message">
+                <h2>👋 Welcome to DEMS Copilot!</h2>
+                <p>Here are some examples of what you can ask:</p>
+            </div>
+            <div id="example-questions">
+                <button class="question-button" onclick="askQuestion(this.innerText)">How can you help me with leave policy?</button>
+                <button class="question-button" onclick="askQuestion(this.innerText)">What are the best practices for project management?</button>
+                <button class="question-button" onclick="askQuestion(this.innerText)">Can you help me write a professional email?</button>
+                <button class="question-button" onclick="askQuestion(this.innerText)">How many vesrion of travel guidelines is available?</button>
+                <button class="question-button" onclick="askQuestion(this.innerText)">What are the leave policy?</button>
+            </div>
+        </div>
+
+        <div id="webchat">
+            <div class="loading-spinner" id="loadingSpinner">Loading chat...</div>
+        </div>
+    </div>
+
+    <script crossorigin="anonymous" src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+
+    <script>
+        let chatStarted = false;
+
+        function refreshPage() {
+            location.reload();
+        }
+
+        function hideWelcomeScreen() {
+            if (!chatStarted) {
+                chatStarted = true;
+                document.getElementById('welcome-screen').classList.add('hidden');
+            }
+        }
+
+        function askQuestion(question) {
+            hideWelcomeScreen();
+            // Find the webchat store from the window object
+            const webchatElement = document.querySelector('[class*="webchat"]');
+            if (webchatElement) {
+                const input = webchatElement.querySelector('input');
+                if (input) {
+                    input.value = question;
+                    input.dispatchEvent(new Event('change'));
+                    const sendButton = webchatElement.querySelector('button[title="Send"]');
+                    if (sendButton) {
+                        sendButton.click();
+                    }
+                }
+            }
+        }
+
+        (async function () {
+            const styleOptions = {
+                hideUploadButton: false,
+                botAvatarImage: 'https://your-image-url.com/bot-avatar.png',
+                userAvatarImage: 'https://your-image-url.com/user-avatar.png',
+                bubbleBackground: '#3097AC',
+                bubbleTextColor: '#ffff',
+                bubbleBorderRadius: '10px',
+                backgroundColor: '#f4f4f4',
+                fontSize: '16px',
+                botAvatarInitials: 'B',
+                userAvatarInitials: 'U'
+            };
+
+            const tokenEndpointURL = new URL('https://148a369decc3eeda85b913c1e80b9a.da.environment.api.powerplatform.com/powervirtualagents/botsbyschema/cra27_testWebPart/directline/token?api-version=2022-03-01-preview');
+            const locale = document.documentElement.lang || 'en';
+            const apiVersion = tokenEndpointURL.searchParams.get('api-version');
+
+            const [directLineURL, token] = await Promise.all([
+                fetch(new URL(`/powervirtualagents/regionalchannelsettings?api-version=${apiVersion}`, tokenEndpointURL))
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to retrieve regional channel settings.');
+                        }
+                        return response.json();
+                    })
+                    .then(({ channelUrlsById: { directline } }) => directline),
+                fetch(tokenEndpointURL)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to retrieve Direct Line token.');
+                        }
+                        return response.json();
+                    })
+                    .then(({ token }) => token)
+            ]);
+
+            const directLine = WebChat.createDirectLine({
+                domain: new URL('v3/directline', directLineURL),
+                token
+            });
+
+            const subscription = directLine.connectionStatus$.subscribe({
+                next(value) {
+                    if (value === 2) {
+                        directLine.postActivity({
+                            localTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                            locale,
+                            name: 'startConversation',
+                            type: 'event'
+                        }).subscribe();
+                        subscription.unsubscribe();
+                    }
+                }
+            });
+
+            // Add activity middleware to hide welcome screen when user starts typing
+            const store = WebChat.createStore({}, ({ dispatch }) => next => action => {
+                if (action.type === 'WEB_CHAT/SEND_MESSAGE') {
+                    hideWelcomeScreen();
+                }
+                return next(action);
+            });
+
+            WebChat.renderWebChat({
+                directLine,
+                locale,
+                styleOptions,
+                store
+            }, document.getElementById('webchat'));
+
+            document.getElementById('loadingSpinner').style.display = 'none';
+        })();
+    </script>
+</body>
+</html>
